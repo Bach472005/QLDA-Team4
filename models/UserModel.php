@@ -58,6 +58,15 @@ class UserModel extends Connect
         $data->execute();
         return $data->fetch(PDO::FETCH_ASSOC);
     }
+    public function register($user)
+    {
+        $sql = "INSERT INTO users (name, email, password) VALUES (:name, :email, :password)";
+        $data = $this->conn->prepare($sql);
+        $data->bindParam(":name", $user["name"]);
+        $data->bindParam(":email", $user["email"]);
+        $data->bindParam(":password", $user["password"]);
+        $data->execute();
+    }
 
     public function updatePassword($userId, $newHashedPassword)
     {
