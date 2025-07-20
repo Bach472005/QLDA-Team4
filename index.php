@@ -23,6 +23,7 @@ match ($act) {
     'login' => (new UserController())->login(),
     'login_view' => (new UserController())->login_view(),
     'logout' => (new UserController())->log_out(),
-
+    'register' => (new UserController())->register(),
+    'register_view' => (new UserController())->register_view(),
     default => require_once './views/components/404.php', // Trang lỗi 404
 };

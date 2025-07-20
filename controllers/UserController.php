@@ -26,6 +26,69 @@ class UserController
         return preg_match('/^[A-Za-zÀ-ỹ\s]{2,50}$/u', $name);
     }
 
+        // REGISTER
+    public function register_view()
+    {
+        require_once './views/User/register.php';
+    }
+    public function register()
+    {
+
+        // echo "<script> console.log('". $_POST["name"] ."') </script>";
+
+        if (empty($_POST["name"]) || empty($_POST["email"]) || empty($_POST["password"]) || empty($_POST["verify_password"])) {
+            echo "<script> alert('❌ Không được để trống bất kỳ trường nào!'); </script>";
+            return 0;
+        }
+
+        $name = htmlspecialchars($_POST["name"], ENT_QUOTES, 'UTF-8');
+        $email = filter_var($_POST["email"], FILTER_SANITIZE_EMAIL);
+        $password = $_POST["password"];
+        $verify_password = $_POST["verify_password"];
+
+        // Kiểm tra mật khẩu nhập lại có khớp không
+        if ($password !== $verify_password) {
+            echo "<script> alert('❌ Mật khẩu xác nhận không trùng khớp!'); </script>";
+            return;
+        }
+
+        // Kiểm tra email hợp lệ
+        if (!$this->validateEmail($email)) {
+            echo "<script> alert('❌ Email không hợp lệ!'); </script>";
+            return;
+        }
+
+        // Kiểm tra tên hợp lệ
+        if (!$this->validateName($name)) {
+            echo "<script> alert('❌ Tên không hợp lệ!'); </script>";
+            return;
+        }
+
+        // Kiểm tra mật khẩu hợp lệ
+        if (!$this->validatePassword($password)) {
+            echo "<script> alert('❌ Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt!'); </script>";
+            return;
+        }
+
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+        $user = [
+            "name" => $name,
+            "email" => $email,
+            "password" => $hashedPassword
+        ];
+        try {
+            $this->userModel->register($user);
+            echo "<script>
+                        alert('✅ Đăng ký thành công!');
+                            window.location.href = '" . BASE_URL . "?act=login_view';
+                    </script>";
+            exit(); // Dừng script ngay sau khi chuyển hướng
+        } catch (\Throwable $th) {
+            echo "<script> alert('❌ Lỗi hệ thống: " . addslashes($th->getMessage()) . "'); </script>";
+            return;
+        }
+    }
     // LOGIN
     public function login_view()
     {
