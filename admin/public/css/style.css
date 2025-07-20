@@ -1,0 +1,130 @@
+* {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    
+}
+:root{
+    --primary-color: #4e73df;
+    --success-color: #1cc88a;
+    --info-color: #36b9cc;
+    --warning-color: #f6c23e;
+    --danger-color: #e74a3b;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa; 
+    color: #333;
+    padding: 10px 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 70%;
+   margin-left:  28%; 
+    border-radius: 10px;
+}
+
+.search-container {
+    flex-grow: 1;
+    margin: 0 20px;
+    
+}
+
+.search-container input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: white;
+    width: 30%;
+}
+.icon {
+    display: flex;
+    align-items: center;
+}
+.icon span {
+    margin: 0 10px;
+    cursor: pointer;
+    position: relative; /* Thêm position relative cho dropdown */
+}
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    display: none; /* Ẩn menu ban đầu */
+    position: absolute;
+    background-color: #ffffff;
+    min-width: 150px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    border-radius: 5px;
+    right: 0; /* Đặt menu ở bên phải */
+}
+
+.dropdown-menu a {
+    color: #333;
+    padding: 10px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-menu a:hover {
+    background-color: #f1f5f9; /* Màu khi hover */
+}
+.icons i {
+    margin-right: 5px;
+    color: #007bff;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #333333; /* Đặt màu nền của sidebar */
+    color:  #ffffff;
+    position: fixed;
+    height: 100vh;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    top: 0;
+    left: 0;
+}
+
+.sidebar h2 {   
+    text-align: center;
+    margin-bottom: 20px;
+    color:#ffffff; /* Màu chữ cho tiêu đề */
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar li {
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+.sidebar li:hover {
+    background-color: #e0e0e0; /* Màu nền khi hover */
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+  background: #f8f9fa;
+    position: relative;
+    bottom: 0;
+    width: 70%;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+    margin-left: 28%;
+}
+
+footer p {
+    color: #333;
+}
+
