@@ -25,6 +25,7 @@ match ($act) {
     'logout' => (new UserController())->log_out(),
     'register' => (new UserController())->register(),
     'register_view' => (new UserController())->register_view(),
+
     'profile' => (new UserController()) ->profile(),
     'change_password' => (new UserController()) -> change_password(),
 
@@ -36,6 +37,7 @@ match ($act) {
     'cart_view' => (new UserController())->cart_view(),
     'add_to_cart' => (new UserController())->add_to_cart(),
     'delete_cart' => (new UserController())->delete_cart(),
+
 
     default => require_once './views/components/404.php', // Trang lỗi 404
 };
