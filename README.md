@@ -21,3 +21,5 @@
 - Không có thư mục client và chỉ có thư mục admin vì mình không muốn trên url có /client nên đặt MVC của client trực tiếp trong root
 - Admin có thư mục riêng với đầy đủ MVC để trên url có /admin.
 - Cấu hình DB trong file commons/env.php
+
+- <img width="1460" height="764" alt="image" src="https://github.com/user-attachments/assets/4365a606-b1ac-4425-bf9f-eb63c21e90ca" />
