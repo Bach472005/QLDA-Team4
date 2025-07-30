@@ -213,4 +213,137 @@ class UserModel extends Connect
             ':product_detail_id' => $product_detail_id
         ]);
     }
+
+    // ORDER
+    public function get_order_by_user_id($id)
+    {
+        $sql = "SELECT
+                        od.quantity,
+                        od.price,
+                        o.id as order_id,
+                        o.status, 
+                        o.created_at,
+                        o.receiver_name,
+                        o.receiver_phone,
+                        o.receiver_address,
+                        o.receiver_note,
+                        s.size_name,
+                        cl.color_name,
+                        cl.color_code,
+                        p.name,
+                        MIN(i.image_url) AS first_image
+                    FROM orders o
+                    JOIN order_details od ON od.order_id = o.id
+                    JOIN product_detail pd ON od.product_detail_id = pd.id
+                    JOIN sizes s ON pd.size_id = s.id
+                    JOIN colors cl ON pd.color_id = cl.id
+                    JOIN products p ON pd.product_id = p.id
+                    LEFT JOIN images i ON i.product_id = p.id
+                    WHERE o.user_id = :user_id
+                    GROUP BY od.quantity, od.price, o.id, o.status, o.created_at, o.receiver_name, o.receiver_phone, o.receiver_address, o.receiver_note, s.size_name, cl.color_name, cl.color_code, p.name";
+        $data = $this->conn->prepare($sql);
+        $data->bindParam(":user_id", $id);
+        $data->execute();
+        return $data->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function add_orders($order, $order_details_list)
+    {
+        // Insert vào bảng orders
+        $sql = "INSERT INTO orders (user_id, payment_method, receiver_name, receiver_phone, receiver_address, receiver_note) 
+                    VALUES (:user_id, :payment_method, :receiver_name, :receiver_phone, :receiver_address, :receiver_note)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($order);
+
+        $orderId = $this->conn->lastInsertId();
+
+        // Insert từng sản phẩm vào order_details
+        $sql_detail = "INSERT INTO order_details (order_id, product_detail_id, quantity, price) 
+                           VALUES (:order_id, :product_detail_id, :quantity, :price)";
+        $stmt_detail = $this->conn->prepare($sql_detail);
+
+        foreach ($order_details_list as $detail) {
+            $stmt_detail->execute([
+                ":order_id" => $orderId,
+                ":product_detail_id" => $detail["product_detail_id"],
+                ":quantity" => $detail["quantity"],
+                ":price" => $detail["price"]
+            ]);
+        }
+    }
+    public function decrease_product_stock($product_detail_id, $quantity)
+    {
+        // 1. Lấy product_id từ product_detail
+        $stmt = $this->conn->prepare("SELECT product_id FROM product_detail WHERE id = ?");
+        $stmt->execute([$product_detail_id]);
+        $product_id = $stmt->fetchColumn();
+
+        if ($product_id) {
+            // 2. Giảm stock trong product_detail
+            $stmt = $this->conn->prepare("UPDATE product_detail SET stock = stock - ? WHERE id = ?");
+            $stmt->execute([$quantity, $product_detail_id]);
+
+            // 3. Giảm tổng quantity trong product
+            $stmt = $this->conn->prepare("UPDATE products SET quantity = quantity - ? WHERE id = ?");
+            $stmt->execute([$quantity, $product_id]);
+        }
+    }
+
+
+    public function get_status_order_by_id($order_id)
+    {
+        $sql = "SELECT status FROM orders WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $order_id, PDO::PARAM_INT);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $result ? $result['status'] : null;
+    }
+    public function cancelled_order($order_id)
+    {
+        try {
+            // 1. Lấy danh sách sản phẩm trong đơn hàng
+            $stmt = $this->conn->prepare("SELECT od.product_detail_id, od.quantity, pd.product_id
+                                      FROM order_details od
+                                      JOIN product_detail pd ON od.product_detail_id = pd.id
+                                      WHERE od.order_id = ?");
+            $stmt->execute([$order_id]);
+            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // 2. Cập nhật lại tồn kho cho từng sản phẩm và biến thể
+            foreach ($items as $item) {
+                $product_detail_id = $item['product_detail_id'];
+                $product_id = $item['product_id'];
+                $quantity = $item['quantity'];
+
+                // Tăng lại stock cho biến thể
+                $stmt = $this->conn->prepare("UPDATE product_detail SET stock = stock + ? WHERE id = ?");
+                $stmt->execute([$quantity, $product_detail_id]);
+
+                // Tăng lại quantity cho sản phẩm chính
+                $stmt = $this->conn->prepare("UPDATE products SET quantity = quantity + ? WHERE id = ?");
+                $stmt->execute([$quantity, $product_id]);
+            }
+
+            // 3. Đổi trạng thái đơn hàng sang "Cancelled"
+            $stmt = $this->conn->prepare("UPDATE orders SET status = 'Cancelled' WHERE id = ?");
+            $stmt->execute([$order_id]);
+
+            return true;
+        } catch (PDOException $e) {
+            echo "Lỗi SQL: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    public function delete_order($order_id)
+    {
+        $sql = "DELETE FROM `orders` where id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $order_id, PDO::PARAM_INT);
+
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
 }
