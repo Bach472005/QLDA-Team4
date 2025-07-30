@@ -178,10 +178,6 @@ class UserController
         return $this->login_view();
     }
 
-    public function __destruct()
-    {
-        $this->userModel = null;
-    }
 
         // Cart
     public function cart_view()
@@ -269,5 +265,180 @@ class UserController
         } else {
             echo "<script>alert('❌ Không tìm thấy sản phẩm cần xóa!'); window.location.href='" . BASE_URL . "?act=cart_view';</script>";
         }
+    }
+    // ORDER
+    public function order()
+    {
+        if (isset($_POST["selected_cart_ids"]) && is_array($_POST["selected_cart_ids"])) {
+            $_SESSION["cart_order"] = [];
+
+            foreach ($_POST["selected_cart_ids"] as $cart_detail_id) {
+                $cart = $this->userModel->get_cart_id($cart_detail_id);
+                if ($cart) {
+                    $_SESSION["cart_order"][] = $cart;
+                }
+            }
+
+            require_once "./views/User/Order.php";
+        } else {
+            echo "<script>alert('Vui lòng chọn sản phẩm để đặt hàng'); window.location.href='" . BASE_URL . "?act=cart_view';</script>";
+        }
+    }
+
+
+    public function add_orders()
+    {
+        $payment_method = $_POST["payment_method"];
+
+        // Lưu thông tin vào session tạm (chưa insert DB)
+        $_SESSION["pending_order"] = [
+            "order" => [
+                "user_id" => $_SESSION["user"]["id"],
+                "payment_method" => $payment_method,
+                "receiver_name" => $_POST["receiver_name"],
+                "receiver_phone" => $_POST["receiver_phone"],
+                "receiver_address" => $_POST["receiver_address"],
+                "receiver_note" => $_POST["receiver_note"],
+            ],
+            "details" => [],
+            "total_amount" => 0
+        ];
+
+        $total = 0;
+        foreach ($_SESSION["cart_order"] as $cart_order) {
+            $total += $cart_order["price"] * $cart_order["quantity"];
+            $_SESSION["pending_order"]["details"][] = [
+                "product_detail_id" => $cart_order["product_detail_id"],
+                "price" => $cart_order["price"],
+                "quantity" => $cart_order["quantity"],
+            ];
+        }
+        $_SESSION["pending_order"]["total_amount"] = $total;
+
+        if ($payment_method === "PayPal") {
+            // Call MoMo payment API (the specific MoMo sandbox or production API)
+
+            $this->initiate_momo_payment($total);
+            return;
+        }
+
+        // Nếu không dùng MOMO, tiến hành xử lý luôn
+        $this->userModel->add_orders(
+            $_SESSION["pending_order"]["order"],
+            $_SESSION["pending_order"]["details"]
+        );
+
+        // xóa sản phẩm trong giỏ hàng đã mua
+        foreach ($_SESSION["cart_order"] as $cart_order) {
+            $this->userModel->delete_cart_detail($cart_order["cart_detail_id"]);
+            $this->userModel->decrease_product_stock(
+                $cart_order["product_detail_id"],
+                $cart_order["quantity"]
+            );
+        }
+
+        // Xoá các sản phẩm đã đặt khỏi session/cart nếu muốn
+        unset($_SESSION["cart_order"]);
+
+        echo "<script>
+                     alert('Đặt hàng thành công!');
+                     window.location.href = '" . BASE_URL . "?act=order_id';
+                   </script>";
+    }
+
+    public function order_id()
+    {
+        if (isset($_SESSION["user"])) {
+            $order = $this->userModel->get_order_by_user_id($_SESSION["user"]["id"]);
+            usort($order, function ($a, $b) {
+                // Ưu tiên đơn hàng không bị huỷ
+                $isACancelled = strtolower($a['status']) === 'cancelled' ? 1 : 0;
+                $isBCancelled = strtolower($b['status']) === 'cancelled' ? 1 : 0;
+
+                if ($isACancelled !== $isBCancelled) {
+                    return $isACancelled - $isBCancelled; // đơn bị hủy sẽ có giá trị lớn hơn => xuống dưới
+                }
+
+                // Nếu cả 2 cùng bị hủy hoặc cùng không bị hủy => so sánh created_at
+                $aTime = isset($a['created_at']) ? strtotime($a['created_at']) : 0;
+                $bTime = isset($b['created_at']) ? strtotime($b['created_at']) : 0;
+                return $bTime <=> $aTime;
+            });
+
+            function getStatusBadge($status)
+            {
+                $status = strtolower($status);
+                switch ($status) {
+                    case 'pending':
+                        return ['bg-warning-subtle text-dark', '⏳', 'Pending'];
+                    case 'processing':
+                        return ['bg-info-subtle text-dark', '🔧', 'Processing'];
+                    case 'shipped':
+                        return ['bg-primary-subtle text-dark', '📦', 'Shipped'];
+                    case 'delivered':
+                        return ['bg-success-subtle text-dark', '✅', 'Delivered'];
+                    case 'cancelled':
+                        return ['bg-danger-subtle text-dark', '❌', 'Cancelled'];
+                    case 'deleted':
+                        return ['bg-secondary text-white', '🗑️', 'Deleted'];
+                    default:
+                        return ['bg-secondary-subtle text-dark', '❔', ucfirst($status)];
+                }
+            }
+
+            require_once "./views/User/UserOrder.php";
+        }
+    }
+    public function cancelled_order()
+    {
+        if (isset($_GET["order_id"])) {
+            $order_id = $_GET["order_id"];
+            $status = $this->userModel->get_status_order_by_id($order_id);
+            if ($status == "Pending" || $status == "Processing") {
+                if ($this->userModel->cancelled_order($order_id)) {
+                    echo "<script>
+                    alert('Bạn đã hủy đơn hàng thành công!');
+                    window.location.href = '" . BASE_URL . "?act=order_id';
+                  </script>";
+                } else {
+                    echo "<script>
+                    alert('Đã có lỗi xảy ra trong quá trình hủy đơn hàng!');
+                    window.location.href = '" . BASE_URL . "?act=order_id';
+                  </script>";
+                }
+
+            } else {
+                if ($status == "Shipped" || $status == "Delivered") {
+                    echo "<script>
+                    alert('Bạn không thể hủy đơn hàng khi nó đang được ship!');
+                    window.location.href = '" . BASE_URL . "?act=order_id';
+                  </script>";
+                }
+            }
+        }
+    }
+    public function delete_order()
+    {
+        if (isset($_GET["order_id"])) {
+            $order_id = $_GET["order_id"];
+            if ($this->userModel->delete_order($order_id)) {
+                echo "<script>
+                    alert('Bạn đã xóa đơn hàng thành công!');
+                    window.location.href = '" . BASE_URL . "?act=order_id';
+                  </script>";
+            } else {
+                echo "<script>
+                    alert('Đã có lỗi xảy ra trong quá trình hủy đơn hàng!');
+                    window.location.href = '" . BASE_URL . "?act=order_id';
+                  </script>";
+            }
+        }
+    }
+
+    
+    public function __destruct()
+    {
+        $this->userModel = null;
+        $this->productModel = null;
     }
 }
