@@ -77,6 +77,7 @@ class UserModel extends Connect
         ]);
     }
 
+
     public function get_cart($id)
     {
         $sql = "SELECT 
@@ -345,4 +346,6 @@ class UserModel extends Connect
         $stmt->execute();
         return $stmt->rowCount() > 0;
     }
+
+
 }

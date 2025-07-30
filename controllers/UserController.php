@@ -88,49 +88,6 @@ class UserController
             return;
         }
     }
-
-    
-    // PROFILE
-    public function profile()
-    {
-        require_once "./views/user/Profile.php";
-    }
-    public function change_password()
-    {
-        // Kiểm tra xem người dùng đã đăng nhập chưa
-        if (!isset($_SESSION['user'])) {
-            header("Location: index.php?act=login");
-            exit;
-        }
-
-        // Kiểm tra khi form được gửi
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $current_password = $_POST['current_password'] ?? '';
-            $new_password = $_POST['new_password'] ?? '';
-            $confirm_password = $_POST['confirm_password'] ?? '';
-
-            $userId = $_SESSION['user']['id'];
-
-            $user = $_SESSION["user"];
-
-            // Kiểm tra mật khẩu hiện tại
-            if (!password_verify($current_password, $user['password'])) {
-                $message = "Mật khẩu hiện tại không đúng.";
-            } elseif ($new_password !== $confirm_password) {
-                $message = "Mật khẩu mới và xác nhận không khớp.";
-            } elseif (strlen($new_password) < 6) {
-                $message = "Mật khẩu mới phải có ít nhất 6 ký tự.";
-            } else {
-                // Cập nhật mật khẩu mới
-                $hashedPassword = password_hash($new_password, PASSWORD_DEFAULT);
-                $this->userModel->updatePassword($userId, $hashedPassword);
-
-                $message = "Đổi mật khẩu thành công.";
-            }
-        }
-    }
-
-
     // LOGIN
     public function login_view()
     {
@@ -176,8 +133,7 @@ class UserController
         echo "<script>alert('✅ Đăng xuất thành công!')</script>";
 
         return $this->login_view();
-    }
-
+ 
 
         // Cart
     public function cart_view()
@@ -440,5 +396,9 @@ class UserController
     {
         $this->userModel = null;
         $this->productModel = null;
+=======
+    public function __destruct()
+    {
+        $this->userModel = null;
     }
 }

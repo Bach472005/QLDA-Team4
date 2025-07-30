@@ -28,6 +28,7 @@ match ($act) {
     'register' => (new UserController())->register(),
     'register_view' => (new UserController())->register_view(),
 
+
     'profile' => (new UserController()) ->profile(),
     'change_password' => (new UserController()) -> change_password(),
 
@@ -47,5 +48,6 @@ match ($act) {
     'cancelled_order' => (new UserController())->cancelled_order(),
     'delete_order' => (new UserController())->delete_order(),
     
+
     default => require_once './views/components/404.php', // Trang lỗi 404
 };
