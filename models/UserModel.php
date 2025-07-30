@@ -67,7 +67,6 @@ class UserModel extends Connect
         $data->bindParam(":password", $user["password"]);
         $data->execute();
     }
-
     public function updatePassword($userId, $newHashedPassword)
     {
         $sql = "UPDATE users SET password = :password WHERE id = :id";

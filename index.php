@@ -27,6 +27,7 @@ match ($act) {
     'logout' => (new UserController())->log_out(),
     'register' => (new UserController())->register(),
     'register_view' => (new UserController())->register_view(),
+
     'profile' => (new UserController()) ->profile(),
     'change_password' => (new UserController()) -> change_password(),
 

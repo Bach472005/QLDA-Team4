@@ -26,7 +26,6 @@ class UserController
         return preg_match('/^[A-Za-zÀ-ỹ\s]{2,50}$/u', $name);
     }
 
-    // REGISTER
     public function register_view()
     {
         require_once './views/User/register.php';
@@ -89,6 +88,7 @@ class UserController
             return;
         }
     }
+
     
     // PROFILE
     public function profile()
@@ -129,6 +129,7 @@ class UserController
             }
         }
     }
+
 
     // LOGIN
     public function login_view()
