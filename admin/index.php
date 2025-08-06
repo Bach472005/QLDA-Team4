@@ -50,5 +50,8 @@ match ($act) {
     'get_product_detail_id' => (new ProductDetailController()) ->update_product_detail_view(),
     'update_product_detail' => (new ProductDetailController()) ->update_product_detail(),
 
+    // Comment
+    "get_comment" => (new CommentController()) -> get_comment(),
+    "delete_comment" => (new CommentController()) -> delete_comment(),
     default => require_once './views/404.php', // Trang lỗi 404
 };
