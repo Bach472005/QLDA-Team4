@@ -36,6 +36,11 @@ match ($act) {
     'get_product_id' => (new ProductController()) -> get_product_id(),
     'update_product' => (new ProductController()) -> update_product_id(),
 
+    // USER
+    'get_user' => (new UserController()) ->get_user(),
+    'delete_user' => (new UserController()) -> delete_user(),
+    'update_user_status' => (new UserController()) -> update_user_status(),
+    'update_user_role' => (new UserController()) -> update_user_role(),
     
     //Component product
     'product_detail_view' => (new ProductDetailController()) -> product_detail_view(),
