@@ -178,3 +178,51 @@
         }
 
     }
+    class CategoryModel extends Connect{
+        public function get_list(){
+            $sql = "SELECT * FROM categories";
+            $data = $this->conn->prepare($sql);
+            $data->execute();
+            return $data->fetchAll(PDO::FETCH_ASSOC);
+        }
+        public function add_categories($category){
+            $sql = "INSERT INTO categories (category_name) VALUES (:category_name)";
+
+            $data = $this->conn->prepare($sql);
+            $data->bindParam(":category_name", $category["category_name"]);
+            $data->execute();
+        }
+        public function delete_category($id){
+            $sql = "DELETE FROM categories WHERE id = :id";
+            $data= $this->conn->prepare($sql);
+            $data->bindParam(":id", $id);
+            return $data->execute();
+        }
+
+        public function get_category_id($id){
+            if($this->conn){
+                $sql = "SELECT * from categories WHERE id = :id";
+                $data = $this->conn->prepare($sql);
+                $data->bindParam(":id", $id);
+                $data->execute();
+                return $data->fetch(PDO::FETCH_ASSOC);
+            } else{
+                return false;
+            }
+        }
+
+        public function update_category($id, $new){
+            if($this->conn){
+                $sql = "UPDATE categories SET category_name = :category_name WHERE id = :id";
+                $data = $this->conn->prepare($sql);
+                $data->bindParam(":category_name", $new["category_name"]);
+                $data->bindParam(":id", $id);
+
+                $data->execute();
+            } else{
+                return false;
+            }
+            
+        }
+        
+    }

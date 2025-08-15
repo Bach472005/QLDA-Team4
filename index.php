@@ -4,15 +4,20 @@
 require_once './commons/env.php'; // Khai báo biến môi trường
 require_once './commons/function.php'; // Hàm hỗ trợ
 
-
+// FILE hỗ trợ cho momo
+require_once './config/momo_config.php'; // Hàm hỗ trợ
 
 // Require toàn bộ file Controllers
+require_once "./controllers/HomeController.php";
 require_once "./controllers/UserController.php";
 require_once "./controllers/ProductController.php";
+require_once "./controllers/PaymentController.php";
 
 // Require toàn bộ file Models
 require_once "./models/UserModel.php";
 require_once "./models/ProductModel.php";
+require_once "./models/CommentModel.php";
+require_once "./models/MoMoPayment.php";
 
 $act = $_GET['act'] ?? '/';
 
@@ -47,5 +52,14 @@ match ($act) {
     'cancelled_order' => (new UserController())->cancelled_order(),
     'delete_order' => (new UserController())->delete_order(),
     
+    // COMMENT
+    'post_comment' => (new ProductController())->post_comment(),
+
+
+    // MOMO
+    'order_success' => (new UserController()) -> order_success(),
+    'momo' => (new PaymentController())->momo_payment(),
+    'momo_return' => (new PaymentController())->momo_return(),
+    'momo_notify' => (new PaymentController())->momo_notify(),
     default => require_once './views/components/404.php', // Trang lỗi 404
 };
