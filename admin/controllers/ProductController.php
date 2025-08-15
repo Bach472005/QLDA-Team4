@@ -144,4 +144,68 @@
                 
         }
     } 
+    class CategoryController{
+        public $CategoryModel;
+
+        
+        public function __construct(){
+            $this->CategoryModel = new CategoryModel();
+            session_start();
+        }
+        public function get_category(){
+            $categories = $this->CategoryModel->get_list();
+            $sizes = $this->CategoryModel->get_table("sizes");
+            $colors = $this->CategoryModel->get_table("colors");
+            require_once './views/Category/List.php';
+        }
+
+        public function add_category_view(){
+            require_once './views/category/Add.php';
+        }
+        public function add_category(){
+            $category = [
+                "category_name" => $_POST["category_name"]
+            ];
+            if($category){
+                $this->CategoryModel->add_categories($category);
+                echo "<script>alert('Add category success!!!') </script>";
+                return $this->get_category();
+            } else{
+                echo "<script>alert('Add category fail!!!') </script>";
+            }
+        }
+        public function deleteCategory(){
+            if(isset($_GET["id"])){
+                $id = $_GET["id"];
+                $this->CategoryModel->delete_category($id);
+            }
+            return $this->get_category();  
+        }
+        public function get_category_id(){
+            if(isset($_GET["id"])){
+                $id = $_GET["id"];
+                $category = $this->CategoryModel->get_category_id($id);
+                require "./views/Category/Update.php";
+            } else{
+                return 0;
+            }
+            
+        }
+        public function update_category(){
+            $id = $_GET["id"];
+            $new = [
+                "category_name" => $_POST["category_name"]
+            ];
+            if(isset($id, $new)){
+                $this->CategoryModel->update_category($id, $new);
+                echo "<script> alert('Update product success!!!') </script>";
+                return $this->get_category();
+            } else{
+                echo "<script> alert('Update product fail!!!') </script>";
+                return 0;
+            }
+        }
+        
+    }
+
 ?>
