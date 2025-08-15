@@ -7,9 +7,17 @@ class UserController
 
     public function __construct()
     {
+        $this->productModel = new ProductModel();
         $this->userModel = new UserModel();
         session_start();
     }
+
+    public function home_view()
+    {
+        $products = $this->productModel->get_product();
+        // require './views/html/home_page.php';
+    }
+
     // Validate
     public function validatePassword($password)
     {
@@ -26,6 +34,8 @@ class UserController
         return preg_match('/^[A-Za-zÀ-ỹ\s]{2,50}$/u', $name);
     }
 
+
+    // REGISTER
     public function register_view()
     {
         require_once './views/User/register.php';
@@ -88,49 +98,6 @@ class UserController
             return;
         }
     }
-
-    
-    // PROFILE
-    public function profile()
-    {
-        require_once "./views/user/Profile.php";
-    }
-    public function change_password()
-    {
-        // Kiểm tra xem người dùng đã đăng nhập chưa
-        if (!isset($_SESSION['user'])) {
-            header("Location: index.php?act=login");
-            exit;
-        }
-
-        // Kiểm tra khi form được gửi
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $current_password = $_POST['current_password'] ?? '';
-            $new_password = $_POST['new_password'] ?? '';
-            $confirm_password = $_POST['confirm_password'] ?? '';
-
-            $userId = $_SESSION['user']['id'];
-
-            $user = $_SESSION["user"];
-
-            // Kiểm tra mật khẩu hiện tại
-            if (!password_verify($current_password, $user['password'])) {
-                $message = "Mật khẩu hiện tại không đúng.";
-            } elseif ($new_password !== $confirm_password) {
-                $message = "Mật khẩu mới và xác nhận không khớp.";
-            } elseif (strlen($new_password) < 6) {
-                $message = "Mật khẩu mới phải có ít nhất 6 ký tự.";
-            } else {
-                // Cập nhật mật khẩu mới
-                $hashedPassword = password_hash($new_password, PASSWORD_DEFAULT);
-                $this->userModel->updatePassword($userId, $hashedPassword);
-
-                $message = "Đổi mật khẩu thành công.";
-            }
-        }
-    }
-
-
     // LOGIN
     public function login_view()
     {
@@ -178,8 +145,48 @@ class UserController
         return $this->login_view();
     }
 
+    // PROFILE
+    public function profile()
+    {
+        require_once "./views/user/Profile.php";
+    }
+    public function change_password()
+    {
+        // Kiểm tra xem người dùng đã đăng nhập chưa
+        if (!isset($_SESSION['user'])) {
+            header("Location: index.php?act=login");
+            exit;
+        }
 
-        // Cart
+        // Kiểm tra khi form được gửi
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $current_password = $_POST['current_password'] ?? '';
+            $new_password = $_POST['new_password'] ?? '';
+            $confirm_password = $_POST['confirm_password'] ?? '';
+
+            $userId = $_SESSION['user']['id'];
+
+            $user = $_SESSION["user"];
+
+            // Kiểm tra mật khẩu hiện tại
+            if (!password_verify($current_password, $user['password'])) {
+                $message = "Mật khẩu hiện tại không đúng.";
+            } elseif ($new_password !== $confirm_password) {
+                $message = "Mật khẩu mới và xác nhận không khớp.";
+            } elseif (strlen($new_password) < 6) {
+                $message = "Mật khẩu mới phải có ít nhất 6 ký tự.";
+            } else {
+                // Cập nhật mật khẩu mới
+                $hashedPassword = password_hash($new_password, PASSWORD_DEFAULT);
+                $this->userModel->updatePassword($userId, $hashedPassword);
+
+                $message = "Đổi mật khẩu thành công.";
+            }
+        }
+    }
+
+
+    // Cart
     public function cart_view()
     {
         if (isset($_SESSION["user"]["id"])) {
@@ -266,7 +273,7 @@ class UserController
             echo "<script>alert('❌ Không tìm thấy sản phẩm cần xóa!'); window.location.href='" . BASE_URL . "?act=cart_view';</script>";
         }
     }
-    // ORDER
+
     public function order()
     {
         if (isset($_POST["selected_cart_ids"]) && is_array($_POST["selected_cart_ids"])) {
@@ -344,6 +351,137 @@ class UserController
                      alert('Đặt hàng thành công!');
                      window.location.href = '" . BASE_URL . "?act=order_id';
                    </script>";
+    }
+
+    // Hàm gửi yêu cầu thanh toán
+    private function initiate_momo_payment($total)
+    {
+        $config = include(__DIR__ . '/../config/momo_config.php');
+
+        $endpoint = $config['endpoint'];
+        $partner_code = $config['partnerCode'];
+        $access_key = $config['accessKey'];
+        $secret_key = $config['secretKey'];
+
+        $order_id = uniqid("order_");
+        $request_id = uniqid("request_");
+        $amount = $total;
+        $order_info = "Thanh toán đơn hàng cho " . $_SESSION["pending_order"]["order"]["receiver_name"];
+        $redirect_url = $config['redirectUrl'];
+        $ipn_url = $config['ipnUrl'];
+        $extra_data = ""; // Có thể thêm dữ liệu như mã khách hàng...
+
+        $request_type = "captureWallet";
+
+        // Chuỗi tạo chữ ký
+        $raw_signature = "accessKey=$access_key&amount=$amount&extraData=$extra_data&ipnUrl=$ipn_url"
+            . "&orderId=$order_id&orderInfo=$order_info&partnerCode=$partner_code"
+            . "&redirectUrl=$redirect_url&requestId=$request_id&requestType=$request_type";
+
+        $signature = hash_hmac("sha256", $raw_signature, $secret_key);
+
+        // Dữ liệu gửi đi
+        $data = [
+            "partnerCode" => $partner_code,
+            "accessKey" => $access_key,
+            "requestId" => $request_id,
+            "amount" => $amount,
+            "orderId" => $order_id,
+            "orderInfo" => $order_info,
+            "redirectUrl" => $redirect_url,
+            "ipnUrl" => $ipn_url,
+            "extraData" => $extra_data,
+            "requestType" => $request_type,
+            "signature" => $signature,
+            "lang" => "vi"
+        ];
+
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $response_data = json_decode($response, true);
+
+        if (isset($response_data['payUrl'])) {
+            header("Location: " . $response_data['payUrl']);
+            exit;
+        } else {
+            echo '<pre>';
+            print_r($response_data);
+            echo '</pre>';
+        }
+    }
+
+
+
+    // Hàm xử lý phản hồi từ MoMo (khi người dùng quay lại)
+    public function handle_momo_response()
+    {
+        $config = include(__DIR__ . '/../config/momo_config.php');
+        $partner_code = $config['partnerCode'];
+        $access_key = $config['accessKey'];
+        $secret_key = $config['secretKey'];
+
+        // Lấy thông tin từ MoMo trả về
+        $request_id = $_GET['requestId'];
+        $order_id = $_GET['orderId'];
+        $amount = $_GET['amount'];
+        $status = $_GET['status'];  // Thực tế trạng thái sẽ có "success" hoặc "failed"
+        $signature = $_GET['signature'];
+
+        // Kiểm tra tính hợp lệ của chữ ký
+        $raw_signature = "partnerCode=" . $partner_code .
+            "&accessKey=" . $access_key .
+            "&requestId=" . $request_id .
+            "&orderId=" . $order_id .
+            "&amount=" . $amount .
+            "&status=" . $status;
+
+        $generated_signature = hash_hmac("sha256", $raw_signature, $secret_key);
+
+        if ($generated_signature === $signature) {
+            // Chữ ký hợp lệ, xử lý đơn hàng
+            if ($status === "success") {
+                // Thanh toán thành công
+                $this->userModel->add_orders(
+                    $_SESSION["pending_order"]["order"],
+                    $_SESSION["pending_order"]["details"]
+                );
+
+                unset($_SESSION["cart_order"]);
+                unset($_SESSION["pending_order"]);
+
+                // Thông báo thành công
+                echo "<script>
+            alert('Thanh toán thành công! Đơn hàng của bạn đã được xác nhận.');
+            window.location.href = '" . BASE_URL . "?act=order_success';
+            </script>";
+            } else {
+                // Thanh toán thất bại
+                echo "<script>
+            alert('Thanh toán không thành công, vui lòng thử lại.');
+            window.location.href = '" . BASE_URL . "'; 
+            </script>";
+            }
+        } else {
+            // Chữ ký không hợp lệ
+            echo "<script>
+        alert('Lỗi xác thực thanh toán!');
+        window.location.href = '" . BASE_URL . "'; 
+        </script>";
+        }
+    }
+
+    // Một trang đơn giản xác nhận đơn hàng đã được thanh toán thành công
+    public function order_success()
+    {
+        echo "<h1>Cảm ơn bạn đã mua hàng!</h1>";
+        echo "<p>Đơn hàng của bạn đã được xác nhận và sẽ được xử lý trong thời gian sớm nhất.</p>";
+        echo "<a href='" . BASE_URL . "'>Trở về trang chủ</a>";
     }
 
     public function order_id()
@@ -434,8 +572,6 @@ class UserController
             }
         }
     }
-
-    
     public function __destruct()
     {
         $this->userModel = null;

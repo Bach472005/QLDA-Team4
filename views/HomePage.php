@@ -206,8 +206,8 @@
             <h2>Sản Phẩm Nổi Bật</h2>
             <div class="product-grid">
                 <?php
-                foreach ($_SESSION["products"] as $product) {
-                    ?>
+                    foreach ($_SESSION["products"] as $product) {
+                ?>
                     <div class="product-card">
                         <a href="<?= BASE_URL . "?act=pd&product_id=" . $product["id"] ?>"><img
                                 src="<?= BASE_URL_ADMIN . $product['first_image'] ?>" alt="<?= $product["name"] ?>" /></a>

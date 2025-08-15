@@ -58,6 +58,7 @@ class UserModel extends Connect
         $data->execute();
         return $data->fetch(PDO::FETCH_ASSOC);
     }
+
     public function register($user)
     {
         $sql = "INSERT INTO users (name, email, password) VALUES (:name, :email, :password)";
@@ -67,6 +68,7 @@ class UserModel extends Connect
         $data->bindParam(":password", $user["password"]);
         $data->execute();
     }
+
     public function updatePassword($userId, $newHashedPassword)
     {
         $sql = "UPDATE users SET password = :password WHERE id = :id";
@@ -76,7 +78,6 @@ class UserModel extends Connect
             'id' => $userId
         ]);
     }
-
     public function get_cart($id)
     {
         $sql = "SELECT 
@@ -345,4 +346,5 @@ class UserModel extends Connect
         $stmt->execute();
         return $stmt->rowCount() > 0;
     }
+
 }
