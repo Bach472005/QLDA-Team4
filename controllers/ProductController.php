@@ -8,7 +8,7 @@
         public function __construct(){
             $this->productModel = new ProductModel();
             $this->userModel = new UserModel();
-            // $this->commentModel = new CommentModel();
+            $this->commentModel = new CommentModel();
 
             session_start();
         }
